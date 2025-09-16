@@ -1,0 +1,82 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  role      Role
+
+  // relations
+  student   Student?
+}
+
+model Student {
+  id              String        @id @default(uuid())
+  userId          String        @unique
+  name            String     
+  studentId       String        @unique
+  rollNo          String        @unique
+  branch          String     
+  cgpa            Float?     
+  resumeUrl       String?     
+  activeBacklogs  Int           @default(0)
+  
+  // relations
+  user            User          @relation(fields: [userId], references: [id])
+  applications    Application[] 
+}
+
+model Company {
+  id            String         @id @default(cuid())
+  name          String
+  role          String?         
+  ctc           String?          
+  location      String?          
+  eligibility   String?          
+  description   Json?
+  lastDate      DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // relations
+  applications  Application[]
+}
+
+model Application {
+  id            String   @id @default(cuid())
+  studentId     String
+  companyId     String
+  status        ApplicationStatus @default(APPLIED)
+  appliedAt     DateTime @default(now())
+
+  // relations
+  student Student @relation(fields: [studentId], references: [id])
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@unique([studentId, companyId])
+}
+
+enum Role {
+  STUDENT
+  TPO
+}
+
+enum ApplicationStatus {
+  APPLIED
+  SHORTLISTED
+  SELECTED
+  REJECTED
+}
