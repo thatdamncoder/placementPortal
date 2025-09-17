@@ -14,17 +14,20 @@ export default function HomePage() {
   const [userType, setUserType] = useState<"student" | "tpo">("student")
   const [credentials, setCredentials] = useState({ email: "", password: "" })
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (userType === "tpo" && credentials.email === "tpo@skit.ac.in" && credentials.password === "1234") {
-      localStorage.setItem("userType", "tpo")
-      localStorage.setItem("userEmail", credentials.email)
-      window.location.href = "/tpo"
-      return
-    }
-    signIn("google", {
+    // if (userType === "tpo") {
+    //   // await signIn("credentials", {
+    //   //   email: credentials.email,
+    //   //   password: credentials.password,
+    //   //   callbackUrl: "/tpo"
+    //   // })
+    //   return
+    // }
+    await signIn("google", {
       callbackUrl: userType === "student" ? "/student" : "/tpo"
     })
+
   }
 
   return (
@@ -100,46 +103,41 @@ export default function HomePage() {
                 </TabsList>
 
                 <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="Enter your email"
-                      value={credentials.email}
-                      onChange={(e) => setCredentials((prev) => ({ ...prev, email: e.target.value }))}
-                      required
-                    />
-                  </div>
+                  {
+                    userType === "tpo" && 
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="Enter your email"
+                        value={credentials.email}
+                        onChange={(e) => setCredentials((prev) => ({ ...prev, email: e.target.value }))}
+                        required
+                        />
+                     </div>
+                  }
 
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="Enter your password"
-                      value={credentials.password}
-                      onChange={(e) => setCredentials((prev) => ({ ...prev, password: e.target.value }))}
-                      required
-                    />
-                  </div>
+                  {
+                    userType === "tpo" &&
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="Enter your password"
+                        value={credentials.password}
+                        onChange={(e) => setCredentials((prev) => ({ ...prev, password: e.target.value }))}
+                        required
+                        />
+                    </div>
+                  }
 
-                  <Button type="submit" className="w-full">
-                    Sign In as {userType === "student" ? "Student" : "TPO"}
+                  <Button type="submit" className="w-full" onClick={handleLogin}>
+                    Sign In {userType === "student" ? " with Google" : "as TPO"}
                   </Button>
                 </form>
 
-                <TabsContent value="student" className="mt-4">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-                    Demo credentials: student@college.edu / password
-                  </p>
-                </TabsContent>
-
-                <TabsContent value="tpo" className="mt-4">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-                    Demo credentials: tpo@college.edu / password
-                  </p>
-                </TabsContent>
               </Tabs>
             </CardContent>
           </Card>

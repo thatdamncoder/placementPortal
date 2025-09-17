@@ -91,9 +91,7 @@ export default function StudentDashboard() {
   }, [])
 
   const handleLogout = () => {
-    localStorage.removeItem("userType")
-    localStorage.removeItem("userEmail")
-    window.location.href = "/"
+    
   }
 
   const getStatusIcon = (status: string) => {

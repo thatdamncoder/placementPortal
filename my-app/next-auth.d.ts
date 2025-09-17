@@ -2,11 +2,18 @@
 //     interface Session{
 //         user: {
 //             id?: string
-//             role?: "admin" | "student"
+//             role?: "tpo" | "student"
 //         } & DefaultSession["user"]
 //     }
-//     interface jwt{
-//         id?: string,
-//         role?: "admin" | "student"
-//     }
+//     interface User {
+//     id: string
+//     role?: string
+//   }
+// }
+
+// declare module "next-auth/jwt" {
+//   interface JWT {
+//     id: string
+//     role?: string
+//   }
 // }
