@@ -10,22 +10,23 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { GraduationCap, Building2, Users, Calendar } from "lucide-react"
 import { signIn } from "next-auth/react"
+import SKITLogo from "./SKITLogo"
 export default function HomePage() {
   const [userType, setUserType] = useState<"student" | "tpo">("student")
   const [credentials, setCredentials] = useState({ email: "", password: "" })
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
-    // if (userType === "tpo") {
-    //   // await signIn("credentials", {
-    //   //   email: credentials.email,
-    //   //   password: credentials.password,
-    //   //   callbackUrl: "/tpo"
-    //   // })
-    //   return
-    // }
-    await signIn("google", {
-      callbackUrl: userType === "student" ? "/student" : "/tpo"
+    if (userType === "tpo") {
+      signIn("credentials", {
+        email: credentials.email,
+        password: credentials.password,
+        callbackUrl: "/tpo"
+      })
+      return
+    }
+    signIn("google", {
+      callbackUrl: "/student"
     })
 
   }
@@ -36,8 +37,8 @@ export default function HomePage() {
       <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-3">
-            <GraduationCap className="h-8 w-8 text-blue-600" />
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">College Placement Portal</h1>
+            <SKITLogo />
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">SKIT Placement Portal</h1>
           </div>
         </div>
       </header>
@@ -133,7 +134,7 @@ export default function HomePage() {
                     </div>
                   }
 
-                  <Button type="submit" className="w-full" onClick={handleLogin}>
+                  <Button type="submit" className="w-full">
                     Sign In {userType === "student" ? " with Google" : "as TPO"}
                   </Button>
                 </form>

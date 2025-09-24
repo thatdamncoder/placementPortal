@@ -7,7 +7,14 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar, Building2, User, LogOut, CheckCircle, Clock, XCircle, Search, ArrowUpDown } from "lucide-react"
+import { CalendarIcon, Building2, User, LogOut, CheckCircle, Clock, XCircle, Search, ArrowUpDown } from "lucide-react"
+import { Calendar as CalendarWidget } from "@/components/ui/calendar"
+import { useRouter } from "next/navigation"
+import { Label } from "@/components/ui/label"
+import { Megaphone } from "lucide-react"
+import { companies as sharedCompanies } from "@/lib/companies"
+import { signOut, useSession } from "next-auth/react"
+import SKITLogo from "./SKITLogo"
 
 interface Company {
   id: string
@@ -29,44 +36,87 @@ interface Application {
 }
 
 export default function StudentDashboard() {
+  
+
   const [activeTab, setActiveTab] = useState("home")
   const [userEmail, setUserEmail] = useState("")
   const [companySearch, setCompanySearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [calendarSort, setCalendarSort] = useState("date-asc")
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
+  const router = useRouter()
 
-  const companies: Company[] = [
+  // Profile state persisted to localStorage (mock persistence)
+  const [addressLine1, setAddressLine1] = useState("")
+  const [addressLine2, setAddressLine2] = useState("")
+  const [city, setCity] = useState("")
+  const [stateRegion, setStateRegion] = useState("")
+  const [pincode, setPincode] = useState("")
+  const [tenthMarks, setTenthMarks] = useState("")
+  const [twelfthMarks, setTwelfthMarks] = useState("")
+  const [resumeName, setResumeName] = useState<string | null>(null)
+  const {data:session, status} = useSession();
+
+  const announcements = [
     {
-      id: "1",
-      name: "Google",
-      role: "Software Engineer",
-      package: "₹25 LPA",
-      deadline: "2024-01-15",
-      status: "open",
-      description: "Join Google as a Software Engineer and work on cutting-edge technology.",
-      requirements: ["B.Tech/M.Tech in CS/IT", "Strong programming skills", "CGPA > 8.0"],
+      id: "a1",
+      title: "Microsoft Drive Registration Open",
+      date: "2024-01-08",
+      summary: "Last date to register: Jan 18.",
     },
+    { id: "a2", title: "Resume Workshop", date: "2024-01-09", summary: "TPO conducting workshop on Jan 13, 4 PM." },
     {
-      id: "2",
-      name: "Microsoft",
-      role: "Product Manager",
-      package: "₹22 LPA",
-      deadline: "2024-01-20",
-      status: "open",
-      description: "Lead product development at Microsoft.",
-      requirements: ["Any Engineering degree", "Leadership experience", "CGPA > 7.5"],
-    },
-    {
-      id: "3",
-      name: "Amazon",
-      role: "Data Scientist",
-      package: "₹20 LPA",
-      deadline: "2024-01-10",
-      status: "closed",
-      description: "Work with big data and machine learning at Amazon.",
-      requirements: ["B.Tech/M.Tech", "Python/R skills", "CGPA > 8.5"],
+      id: "a3",
+      title: "Amazon OA Guidelines",
+      date: "2024-01-06",
+      summary: "Check email for OA instructions and sample tests.",
     },
   ]
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/")
+    }
+  }, [status, router])
+
+  // Loading state
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-600 dark:text-gray-300">Loading...</p>
+      </div>
+    )
+  }
+
+  // If no session (unauthenticated), don’t render anything
+  if (!session) return null
+
+  // Logout
+  const handleLogout = () => {
+    signOut({ callbackUrl: "/" })
+  }
+
+
+  const handleSaveProfile = () => {
+    const payload = {
+      addressLine1,
+      addressLine2,
+      city,
+      stateRegion,
+      pincode,
+      tenthMarks,
+      twelfthMarks,
+      resumeName,
+    }
+    // localStorage.setItem("studentProfile", JSON.stringify(payload))
+  }
+
+  const companies: Company[] = sharedCompanies as unknown as Company[]
+
+  const upcomingEvents = [...companies]
+    .filter((e) => new Date(e.deadline).getTime() >= new Date().setHours(0, 0, 0, 0))
+    .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
+    .slice(0, 3)
 
   const applications: Application[] = [
     { id: "1", companyName: "Google", role: "Software Engineer", appliedDate: "2024-01-05", status: "pending" },
@@ -81,18 +131,6 @@ export default function StudentDashboard() {
     { id: "4", title: "TCS - Campus Drive", date: "2024-01-25", type: "drive" },
   ]
 
-  useEffect(() => {
-    const email = localStorage.getItem("userEmail")
-    if (!email) {
-      window.location.href = "/"
-    } else {
-      setUserEmail(email)
-    }
-  }, [])
-
-  const handleLogout = () => {
-    
-  }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -135,6 +173,11 @@ export default function StudentDashboard() {
     return calendarSort === "date-asc" ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime()
   })
 
+  const isSameDay = (dateStr: string, date: Date) => {
+    const d = new Date(dateStr)
+    return d.getFullYear() === date.getFullYear() && d.getMonth() === date.getMonth() && d.getDate() === date.getDate()
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
@@ -142,7 +185,7 @@ export default function StudentDashboard() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Building2 className="h-8 w-8 text-blue-600" />
+              <SKITLogo />
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Student Dashboard</h1>
             </div>
             <div className="flex items-center gap-4">
@@ -164,7 +207,7 @@ export default function StudentDashboard() {
               Home
             </TabsTrigger>
             <TabsTrigger value="calendar">
-              <Calendar className="h-4 w-4 mr-2" />
+              <CalendarIcon className="h-4 w-4 mr-2" />
               Calendar
             </TabsTrigger>
             <TabsTrigger value="companies">
@@ -183,85 +226,149 @@ export default function StudentDashboard() {
 
           {/* Home Tab */}
           <TabsContent value="home" className="space-y-6">
-            <div className="grid md:grid-cols-3 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
-                  <Building2 className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{applications.length}</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Selected</CardTitle>
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-600">
-                    {applications.filter((app) => app.status === "selected").length}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Pending</CardTitle>
-                  <Clock className="h-4 w-4 text-yellow-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-yellow-600">
-                    {applications.filter((app) => app.status === "pending").length}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Recent Applications</CardTitle>
-                    <CardDescription>Your latest placement applications</CardDescription>
-                  </div>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Applications</SelectItem>
-                      <SelectItem value="selected">Selected</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                      <SelectItem value="pending">Ongoing</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {filteredApplications.slice(0, 3).map((app) => (
-                    <div key={app.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        {getStatusIcon(app.status)}
-                        <div>
-                          <p className="font-medium">{app.companyName}</p>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{app.role}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <Badge variant={app.status === "selected" ? "default" : "secondary"}>{app.status}</Badge>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{app.appliedDate}</p>
-                      </div>
+            <div className="grid gap-6 lg:grid-cols-3">
+              {/* Sidebar (Announcements + Upcoming) — right on desktop, first on mobile */}
+              <aside
+                role="complementary"
+                aria-label="Important updates"
+                className="order-1 lg:order-2 lg:col-span-1 space-y-6 lg:sticky lg:top-4 lg:self-start"
+              >
+                {/* Announcements */}
+                <Card className="border-l-4 border-l-blue-600">
+                  <CardHeader className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Megaphone className="h-4 w-4 text-blue-600" />
+                      <CardTitle>Announcements</CardTitle>
                     </div>
-                  ))}
-                  {filteredApplications.length === 0 && (
-                    <p className="text-center text-gray-500 py-8">No applications found for the selected status.</p>
-                  )}
+                    <CardDescription>Latest notices from TPO</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {announcements.map((a) => (
+                      <div key={a.id} className="p-4 border rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium">{a.title}</p>
+                          <span className="text-xs text-gray-500">{new Date(a.date).toLocaleDateString()}</span>
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{a.summary}</p>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+
+                {/* Upcoming Events */}
+                <Card className="border-l-4 border-l-blue-600">
+                  <CardHeader>
+                    <CardTitle>Upcoming Events</CardTitle>
+                    <CardDescription>What’s next on your calendar</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {upcomingEvents.length > 0 ? (
+                      upcomingEvents.map((event) => (
+                        <div key={event.id} className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                          <p className="font-medium">
+                            {event.name} - {event.role}
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            {new Date(event.deadline).toLocaleDateString("en-US", {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            })}
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500">No upcoming events.</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </aside>
+
+              {/* Main content (Stats + Recent Applications) — left on desktop */}
+              <section className="order-2 lg:order-1 lg:col-span-2 space-y-6">
+                {/* Stats */}
+                <div className="grid md:grid-cols-3 gap-6">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{applications.length}</div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Selected</CardTitle>
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-green-600">
+                        {applications.filter((app) => app.status === "selected").length}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Pending</CardTitle>
+                      <Clock className="h-4 w-4 text-yellow-600" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-yellow-600">
+                        {applications.filter((app) => app.status === "pending").length}
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
-              </CardContent>
-            </Card>
+
+                {/* Recent Applications with status filter */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>Recent Applications</CardTitle>
+                        <CardDescription>Your latest placement applications</CardDescription>
+                      </div>
+                      <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="w-48">
+                          <SelectValue placeholder="Filter by status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Applications</SelectItem>
+                          <SelectItem value="selected">Selected</SelectItem>
+                          <SelectItem value="rejected">Rejected</SelectItem>
+                          <SelectItem value="pending">Ongoing</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {filteredApplications.slice(0, 3).map((app) => (
+                        <div key={app.id} className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex items-center gap-3">
+                            {getStatusIcon(app.status)}
+                            <div>
+                              <p className="font-medium">{app.companyName}</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">{app.role}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <Badge variant={app.status === "selected" ? "default" : "secondary"}>{app.status}</Badge>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{app.appliedDate}</p>
+                          </div>
+                        </div>
+                      ))}
+                      {filteredApplications.length === 0 && (
+                        <p className="text-center text-gray-500 py-8">No applications found for the selected status.</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </section>
+            </div>
           </TabsContent>
 
           {/* Companies Tab */}
@@ -314,7 +421,14 @@ export default function StudentDashboard() {
                         </div>
                         <div className="flex items-center justify-between">
                           <p className="text-sm text-gray-600 dark:text-gray-400">Deadline: {company.deadline}</p>
-                          <Button disabled={company.status !== "open"} className="bg-blue-600 hover:bg-blue-700">
+                          <Button
+                            disabled={company.status !== "open"}
+                            className="bg-blue-600 hover:bg-blue-700"
+                            onClick={() => {
+                              if (company.status !== "open") return
+                              router.push(`/student/companies/${company.id}`)
+                            }}
+                          >
                             {company.status === "open" ? "Apply Now" : "Closed"}
                           </Button>
                         </div>
@@ -388,45 +502,61 @@ export default function StudentDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {sortedCalendarEvents.map((event) => (
-                    <div
-                      key={event.id}
-                      className={`p-4 border rounded-lg ${
-                        event.type === "deadline"
-                          ? "bg-red-50 dark:bg-red-900/20"
-                          : event.type === "interview"
-                            ? "bg-blue-50 dark:bg-blue-900/20"
-                            : event.type === "result"
-                              ? "bg-green-50 dark:bg-green-900/20"
-                              : "bg-purple-50 dark:bg-purple-900/20"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Calendar
-                          className={`h-5 w-5 ${
-                            event.type === "deadline"
-                              ? "text-red-600"
-                              : event.type === "interview"
-                                ? "text-blue-600"
-                                : event.type === "result"
-                                  ? "text-green-600"
-                                  : "text-purple-600"
-                          }`}
-                        />
-                        <div>
-                          <p className="font-medium">{event.title}</p>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {new Date(event.date).toLocaleDateString("en-US", {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            })}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="p-3 border rounded-md bg-white dark:bg-gray-800">
+                    <CalendarWidget mode="single" selected={selectedDate} onSelect={setSelectedDate} />
+                  </div>
+                  <div className="space-y-4">
+                    {(() => {
+                      const eventsToShow = selectedDate
+                        ? sortedCalendarEvents.filter((e) => isSameDay(e.date, selectedDate))
+                        : sortedCalendarEvents
+                      return eventsToShow.length > 0 ? (
+                        eventsToShow.map((event) => (
+                          <div
+                            key={event.id}
+                            className={`p-4 border rounded-lg ${
+                              event.type === "deadline"
+                                ? "bg-red-50 dark:bg-red-900/20"
+                                : event.type === "interview"
+                                  ? "bg-blue-50 dark:bg-blue-900/20"
+                                  : event.type === "result"
+                                    ? "bg-green-50 dark:bg-green-900/20"
+                                    : "bg-purple-50 dark:bg-purple-900/20"
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <CalendarIcon
+                                className={`h-5 w-5 ${
+                                  event.type === "deadline"
+                                    ? "text-red-600"
+                                    : event.type === "interview"
+                                      ? "text-blue-600"
+                                      : event.type === "result"
+                                        ? "text-green-600"
+                                        : "text-purple-600"
+                                }`}
+                              />
+                              <div>
+                                <p className="font-medium">{event.title}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                  {new Date(event.date).toLocaleDateString("en-US", {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                  })}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-gray-500">
+                          {selectedDate ? "No events on the selected date." : "No events to display."}
+                        </p>
+                      )
+                    })()}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -440,26 +570,85 @@ export default function StudentDashboard() {
                 <CardDescription>Manage your profile information</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-6">
+                  {/* Basic Info (read-only for demo) */}
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium">Name</label>
+                      <Label className="text-sm">Name</Label>
                       <p className="text-gray-600 dark:text-gray-400">John Doe</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Email</label>
+                      <Label className="text-sm">Email</Label>
                       <p className="text-gray-600 dark:text-gray-400">{userEmail}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Department</label>
+                      <Label className="text-sm">Department</Label>
                       <p className="text-gray-600 dark:text-gray-400">Computer Science</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium">CGPA</label>
+                      <Label className="text-sm">CGPA</Label>
                       <p className="text-gray-600 dark:text-gray-400">8.5</p>
                     </div>
                   </div>
-                  <Button className="mt-4">Update Profile</Button>
+
+                  <div className="space-y-3">
+                    <h4 className="font-medium">Address</h4>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="addr1">Address Line 1</Label>
+                        <Input id="addr1" value={addressLine1} onChange={(e) => setAddressLine1(e.target.value)} />
+                      </div>
+                      <div>
+                        <Label htmlFor="addr2">Address Line 2</Label>
+                        <Input id="addr2" value={addressLine2} onChange={(e) => setAddressLine2(e.target.value)} />
+                      </div>
+                      <div>
+                        <Label htmlFor="city">City</Label>
+                        <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} />
+                      </div>
+                      <div>
+                        <Label htmlFor="state">State</Label>
+                        <Input id="state" value={stateRegion} onChange={(e) => setStateRegion(e.target.value)} />
+                      </div>
+                      <div>
+                        <Label htmlFor="pincode">Pincode</Label>
+                        <Input id="pincode" value={pincode} onChange={(e) => setPincode(e.target.value)} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="font-medium">Education</h4>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="tenth">10th Percentage/CGPA</Label>
+                        <Input id="tenth" value={tenthMarks} onChange={(e) => setTenthMarks(e.target.value)} />
+                      </div>
+                      <div>
+                        <Label htmlFor="twelfth">12th Percentage</Label>
+                        <Input id="twelfth" value={twelfthMarks} onChange={(e) => setTwelfthMarks(e.target.value)} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="font-medium">Resume</h4>
+                    <Input
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) setResumeName(file.name)
+                      }}
+                    />
+                    {resumeName && <p className="text-sm text-gray-600 dark:text-gray-400">Uploaded: {resumeName}</p>}
+                  </div>
+
+                  <div className="flex justify-end">
+                    <Button className="mt-2" onClick={handleSaveProfile}>
+                      Save Profile
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

@@ -19,6 +19,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Building2, Users, Plus, Upload, Bell, LogOut, FileText, Sparkles } from "lucide-react"
+import { signOut } from "next-auth/react"
+import SKITLogo from "./SKITLogo"
 
 interface Drive {
   id: string
@@ -32,7 +34,6 @@ interface Drive {
 
 export default function TPODashboard() {
   const [activeTab, setActiveTab] = useState("overview")
-  const [userEmail, setUserEmail] = useState("")
   const [showAddDrive, setShowAddDrive] = useState(false)
   const [showAIProcessor, setShowAIProcessor] = useState(false)
   const [aiText, setAiText] = useState("")
@@ -45,7 +46,8 @@ export default function TPODashboard() {
     description: "",
     requirements: "",
   })
-
+  const userEmail = "tpo@skit.ac.in"
+  
   // Mock data
   const drives: Drive[] = [
     {
@@ -77,20 +79,10 @@ export default function TPODashboard() {
     },
   ]
 
-  useEffect(() => {
-    const email = localStorage.getItem("userEmail")
-    const userType = localStorage.getItem("userType")
-    if (!email || userType !== "tpo") {
-      window.location.href = "/"
-    } else {
-      setUserEmail(email)
-    }
-  }, [])
-
   const handleLogout = () => {
-    localStorage.removeItem("userType")
-    localStorage.removeItem("userEmail")
-    window.location.href = "/"
+    signOut({
+        callbackUrl: "/"
+    })
   }
 
   const handleAddDrive = (e: React.FormEvent) => {
@@ -163,7 +155,7 @@ export default function TPODashboard() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Building2 className="h-8 w-8 text-blue-600" />
+              <SKITLogo/>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">TPO Dashboard</h1>
             </div>
             <div className="flex items-center gap-4">
