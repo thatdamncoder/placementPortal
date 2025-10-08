@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Building2, ArrowLeft, CheckCircle2 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import Header from "@/components/custom/Header"
 
 export default function CompanyDetailsPage() {
   const { id } = useParams<{ id: string }>()
@@ -19,48 +20,38 @@ export default function CompanyDetailsPage() {
   const company = useMemo(() => companies.find((c) => c.id === id), [id])
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("appliedCompanies")
-      if (raw) {
-        const map: Record<string, string> = JSON.parse(raw) // { [companyId]: appliedAtISO }
-        if (map[id]) {
-          setApplied(true)
-          setAppliedAt(map[id])
-        }
+  try {
+    const raw = sessionStorage.getItem("appliedCompanies")
+    if (raw) {
+      const map: Record<string, string> = JSON.parse(raw)
+      if (map[id]) {
+        setApplied(true)
+        setAppliedAt(map[id])
       }
-    } catch {}
-  }, [id])
+    }
+  } catch {}
+}, [id])
 
-  const handleApply = () => {
-    if ((company?.status !== "open") || applied) return
-    const now = new Date().toISOString()
-    try {
-      const raw = localStorage.getItem("appliedCompanies")
-      const map: Record<string, string> = raw ? JSON.parse(raw) : {}
-      map[id] = now
-      localStorage.setItem("appliedCompanies", JSON.stringify(map))
-    } catch {}
-    setApplied(true)
-    setAppliedAt(now)
-  }
+const handleApply = () => {
+  if ((company?.status !== "open") || applied) return
+  const now = new Date().toISOString()
+
+  try {
+    const raw = sessionStorage.getItem("appliedCompanies")
+    const map: Record<string, string> = raw ? JSON.parse(raw) : {}
+    map[id] = now  
+    sessionStorage.setItem("appliedCompanies", JSON.stringify(map))
+  } catch {}
+
+  setApplied(true)
+  setAppliedAt(now)
+}
 
   const isOpen = company?.status === "open"
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <header className="bg-white dark:bg-gray-800 border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Building2 className="h-8 w-8 text-blue-600" />
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Company Details</h1>
-            </div>
-            <Link href="/student" className="text-sm text-blue-600 hover:underline">
-              Back to Dashboard
-            </Link>
-          </div>
-        </div>
-      </header>
+      <Header header="Student Dashboard" />
 
       <main className="container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-3 gap-6">
@@ -145,14 +136,14 @@ export default function CompanyDetailsPage() {
                 </TabsContent>
                 <TabsContent value="annoucements" className="space-y-4">
                   <p className="text-gray-700 dark:text-gray-300">{"Annoucements for this drive will appear here."}</p>
-                  <div>
+                  {/* <div>
                     <h3 className="font-semibold mb-2">Requirements</h3>
                     <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-300">
                       {company?.requirements?.map((req, i) => (
                         <li key={i}>{req}</li>
                       ))}
                     </ul>
-                  </div>
+                  </div> */}
                 </TabsContent>
               </Tabs>
             </CardContent>

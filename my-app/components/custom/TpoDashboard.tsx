@@ -1,7 +1,8 @@
 "use client"
 
 import type React from "react"
-
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts"
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -18,9 +19,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Building2, Users, Plus, Upload, Bell, LogOut, FileText, Sparkles } from "lucide-react"
+import { Building2, Users, Plus, Bell, LogOut, Sparkles, FileText } from "lucide-react"
+import Link from "next/link"
 import { signOut } from "next-auth/react"
-import SKITLogo from "./SKITLogo"
+import Header from "./Header"
 
 interface Drive {
   id: string
@@ -47,6 +49,9 @@ export default function TPODashboard() {
     requirements: "",
   })
   const userEmail = "tpo@skit.ac.in"
+  const [driveSearch, setDriveSearch] = useState("")
+  const [driveStatus, setDriveStatus] = useState<"all" | "active" | "closed" | "draft">("all")
+  const [openDriveId, setOpenDriveId] = useState<string | null>(null)
   
   // Mock data
   const drives: Drive[] = [
@@ -55,7 +60,7 @@ export default function TPODashboard() {
       companyName: "Google",
       role: "Software Engineer",
       package: "₹25 LPA",
-      deadline: "2024-01-15",
+      deadline: "2025-01-15",
       status: "active",
       applicants: 45,
     },
@@ -64,7 +69,7 @@ export default function TPODashboard() {
       companyName: "Microsoft",
       role: "Product Manager",
       package: "₹22 LPA",
-      deadline: "2024-01-20",
+      deadline: "2025-01-20",
       status: "active",
       applicants: 32,
     },
@@ -73,7 +78,7 @@ export default function TPODashboard() {
       companyName: "Amazon",
       role: "Data Scientist",
       package: "₹20 LPA",
-      deadline: "2024-01-10",
+      deadline: "2025-01-10",
       status: "closed",
       applicants: 67,
     },
@@ -100,13 +105,23 @@ export default function TPODashboard() {
     })
   }
 
+  const monthlyTrend = [
+  { month: "Jan", placed: 12, applications: 80 },
+  { month: "Feb", placed: 18, applications: 95 },
+  { month: "Mar", placed: 22, applications: 110 },
+  { month: "Apr", placed: 30, applications: 140 },
+  { month: "May", placed: 28, applications: 120 },
+  { month: "Jun", placed: 35, applications: 150 },
+]
+
+
   const processAIText = () => {
     // Mock AI processing - in real app would use actual AI service
     const mockResult = {
       companyName: "TechCorp Solutions",
       role: "Full Stack Developer",
       package: "₹18 LPA",
-      deadline: "2024-02-15",
+      deadline: "2025-02-15",
       description: "Join our dynamic team as a Full Stack Developer and work on cutting-edge web applications.",
       requirements: [
         "B.Tech/M.Tech in CS/IT",
@@ -148,30 +163,24 @@ export default function TPODashboard() {
     }
   }
 
+  const filteredDrives = drives.filter((d) => {
+    const matchesSearch =
+      !driveSearch.trim() ||
+      d.companyName.toLowerCase().includes(driveSearch.toLowerCase()) ||
+      d.role.toLowerCase().includes(driveSearch.toLowerCase())
+    const matchesStatus = driveStatus === "all" ? true : d.status === driveStatus
+    return matchesSearch && matchesStatus
+  })
+
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <SKITLogo/>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">TPO Dashboard</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600 dark:text-gray-400">{userEmail}</span>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header header="TPO Dashboard" />
 
       <div className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5 mb-8">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger value="overview">
               <Building2 className="h-4 w-4 mr-2" />
               Overview
@@ -180,18 +189,14 @@ export default function TPODashboard() {
               <Users className="h-4 w-4 mr-2" />
               Manage Drives
             </TabsTrigger>
-            <TabsTrigger value="results">
-              <Upload className="h-4 w-4 mr-2" />
-              Upload Results
-            </TabsTrigger>
             <TabsTrigger value="announcements">
               <Bell className="h-4 w-4 mr-2" />
               Announcements
             </TabsTrigger>
-            <TabsTrigger value="ai-processor">
+            {/* <TabsTrigger value="ai-processor">
               <Sparkles className="h-4 w-4 mr-2" />
               AI Processor
-            </TabsTrigger>
+            </TabsTrigger> */}
           </TabsList>
 
           {/* Overview Tab */}
@@ -237,29 +242,115 @@ export default function TPODashboard() {
                 </CardContent>
               </Card>
             </div>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+                <Card>
+                    <CardHeader>
+                    <CardTitle>Alerts</CardTitle>
+                    <CardDescription>Students needing attention</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                    <div className="p-3 border-l-4 border-l-yellow-500 rounded bg-yellow-50 dark:bg-yellow-900/10">
+                        Pending backlogs: 7 students
+                    </div>
+                    <div className="p-3 border-l-4 border-l-red-500 rounded bg-red-50 dark:bg-red-900/10">
+                        Low CGPA &lt; 6.0: 4 students
+                    </div>
+                    <div className="p-3 border-l-4 border-l-blue-500 rounded bg-blue-50 dark:bg-blue-900/10">
+                        Incomplete profiles: 12 students
+                    </div>
+                    </CardContent>
+                </Card>
 
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Recent Drives</CardTitle>
+                        <CardDescription>Latest placement drives and their status</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4">
+                        {drives.slice(0, 3).map((drive) => (
+                            <div key={drive.id} className="flex items-center justify-between p-4 border rounded-lg">
+                            <div>
+                                <p className="font-medium">{drive.companyName}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">{drive.role}</p>
+                            </div>
+                            <div className="text-right">
+                                <Badge className={getStatusColor(drive.status)}>{drive.status}</Badge>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{drive.applicants} applicants</p>
+                            </div>
+                            </div>
+                        ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Placement Trend Chart */}
             <Card>
               <CardHeader>
-                <CardTitle>Recent Drives</CardTitle>
-                <CardDescription>Latest placement drives and their status</CardDescription>
+                <CardTitle>Placement Trend</CardTitle>
+                <CardDescription>Applications vs placements over recent months</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {drives.slice(0, 3).map((drive) => (
-                    <div key={drive.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <p className="font-medium">{drive.companyName}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{drive.role}</p>
-                      </div>
-                      <div className="text-right">
-                        <Badge className={getStatusColor(drive.status)}>{drive.status}</Badge>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{drive.applicants} applicants</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <CardContent className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={monthlyTrend}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="applications" stroke="#60a5fa" strokeWidth={2} />
+                    <Line type="monotone" dataKey="placed" stroke="#22c55e" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
+
+            {/* Top Companies and Alerts */}
+            {/* <div className="grid md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Top Recruiting Companies</CardTitle>
+                  <CardDescription>Most activity in recent drives</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {drives
+                    .slice()
+                    .sort((a, b) => b.applicants - a.applicants)
+                    .slice(0, 5)
+                    .map((d) => (
+                      <div key={d.id} className="flex items-center justify-between p-3 border rounded">
+                        <div>
+                          <p className="font-medium">{d.companyName}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{d.role}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{d.applicants} applicants</p>
+                          <Badge className={getStatusColor(d.status)}>{d.status}</Badge>
+                        </div>
+                      </div>
+                    ))}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Alerts</CardTitle>
+                  <CardDescription>Students needing attention</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="p-3 border-l-4 border-l-yellow-500 rounded bg-yellow-50 dark:bg-yellow-900/10">
+                    Pending backlogs: 7 students
+                  </div>
+                  <div className="p-3 border-l-4 border-l-red-500 rounded bg-red-50 dark:bg-red-900/10">
+                    Low CGPA &lt; 6.0: 4 students
+                  </div>
+                  <div className="p-3 border-l-4 border-l-blue-500 rounded bg-blue-50 dark:bg-blue-900/10">
+                    Incomplete profiles: 12 students
+                  </div>
+                </CardContent>
+              </Card>
+            </div> */}
           </TabsContent>
 
           {/* Drives Tab */}
@@ -418,10 +509,35 @@ export default function TPODashboard() {
               </div>
             </div>
 
+            {/* Filter Toolbar */}
+            <Card className="w-[50%]">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <Input
+                    placeholder="Search by company or role"
+                    value={driveSearch}
+                    onChange={(e) => setDriveSearch(e.target.value)}
+                  />
+                  <Select value={driveStatus} onValueChange={(v) => setDriveStatus(v as any)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="closed">Closed</SelectItem>
+                      <SelectItem value="draft">Draft</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* List Filtered Drives with 'Open' */}
             <Card>
               <CardContent className="p-6">
                 <div className="space-y-4">
-                  {drives.map((drive) => (
+                  {filteredDrives.map((drive) => (
                     <Card key={drive.id} className="border-l-4 border-l-blue-500">
                       <CardHeader>
                         <div className="flex items-center justify-between">
@@ -443,66 +559,18 @@ export default function TPODashboard() {
                             <p className="text-lg font-bold text-green-600">{drive.package}</p>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Deadline: {drive.deadline}</p>
                           </div>
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm">
-                              Edit
+                          <Link href={`./tpo/drives/${drive.id}`}>
+                            <Button variant="default" size="sm" disabled={drive.status === "closed"}>
+                             Open
                             </Button>
-                            <Button variant="outline" size="sm">
-                              View Applications
-                            </Button>
-                          </div>
+                          </Link>
                         </div>
                       </CardContent>
                     </Card>
                   ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Results Tab */}
-          <TabsContent value="results" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Upload Placement Results</CardTitle>
-                <CardDescription>Upload and manage placement results for drives</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
-                    <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 dark:text-gray-400 mb-2">
-                      Drag and drop your results file here, or click to browse
-                    </p>
-                    <Button variant="outline">
-                      <Upload className="h-4 w-4 mr-2" />
-                      Choose File
-                    </Button>
-                  </div>
-
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Recent Uploads</h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between p-3 border rounded">
-                        <div>
-                          <p className="font-medium">Google_Results_2024.xlsx</p>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">Uploaded 2 days ago</p>
-                        </div>
-                        <Button variant="outline" size="sm">
-                          View
-                        </Button>
-                      </div>
-                      <div className="flex items-center justify-between p-3 border rounded">
-                        <div>
-                          <p className="font-medium">Microsoft_Results_2024.xlsx</p>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">Uploaded 1 week ago</p>
-                        </div>
-                        <Button variant="outline" size="sm">
-                          View
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
+                  {filteredDrives.length === 0 && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400">No drives match your filters.</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -512,8 +580,10 @@ export default function TPODashboard() {
           <TabsContent value="announcements" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Send Announcements</CardTitle>
-                <CardDescription>Notify students about important updates</CardDescription>
+                <CardTitle>Send Public Announcements</CardTitle>
+                <CardDescription>Notify all students about important updates. For company specific announcements,
+                    check Announcements tab for each company drive in the previous section.
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -535,7 +605,7 @@ export default function TPODashboard() {
           </TabsContent>
 
           {/* AI Processor Tab */}
-          <TabsContent value="ai-processor" className="space-y-6">
+          {/* <TabsContent value="ai-processor" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -621,16 +691,16 @@ export default function TPODashboard() {
                   <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
                     <h4 className="font-medium mb-2">How it works:</h4>
                     <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                      <li>• Paste any unstructured company information or job posting</li>
-                      <li>• AI will extract company name, role, package, deadline, and requirements</li>
-                      <li>• Review the extracted information and create a placement drive</li>
-                      <li>• Save time on manual data entry and reduce errors</li>
+                      <li>Paste any unstructured company information or job posting</li>
+                      <li>AI will extract company name, role, package, deadline, and requirements</li>
+                      <li>Review the extracted information and create a placement drive</li>
+                      <li>Save time on manual data entry and reduce errors</li>
                     </ul>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </TabsContent> */}
         </Tabs>
       </div>
     </div>
