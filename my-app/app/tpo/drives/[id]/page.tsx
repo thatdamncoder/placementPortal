@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react'
+import { use } from 'react'
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -50,9 +50,9 @@ type AnnouncementPost = {
   createdAt: string
 }
 
-export default function Page({ params }: { params: { id: string } }) {
+export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
-  const driveId = params.id 
+  const {id: driveId} = use(params);
 
   const [drive, setDrive] = useState<Drive | null>(null)
   const [editOpen, setEditOpen] = useState(false)

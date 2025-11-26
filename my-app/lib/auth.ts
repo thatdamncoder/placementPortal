@@ -1,7 +1,7 @@
 import NextAuth from "next-auth"
 import Google from "next-auth/providers/google"
 import Credential from "next-auth/providers/credentials"
-import { SKIT_DOMAIN } from "../constants";
+import { SKIT_DOMAIN, TPO_EMAIL, TPO_PASSWORD } from "../constants";
  
 export const { handlers, auth, signIn, signOut} = NextAuth({
   providers: [
@@ -15,10 +15,10 @@ export const { handlers, auth, signIn, signOut} = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (credentials?.email === "tpo@skit.ac.in" && credentials?.password === "1234"){
+        if (credentials?.email === TPO_EMAIL && credentials?.password === TPO_PASSWORD){
           return {
             id: "tpo-id-1",
-            email: "tpo@skit.ac.in",
+            email: TPO_EMAIL,
           }
         }
         return null;
